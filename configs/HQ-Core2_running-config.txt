@@ -1,0 +1,232 @@
+!
+version 12.2(37)SE1
+no service timestamps log datetime msec
+no service timestamps debug datetime msec
+no service password-encryption
+!
+hostname HQ-CORE2
+!
+!
+no profinet
+enable secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+!
+!
+!
+!
+!
+ip routing
+!
+!
+!
+!
+username admin privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+no ip domain-lookup
+ip domain-name fuzwayo.lab
+!
+!
+spanning-tree mode pvst
+!
+!
+!
+!
+!
+!
+interface FastEthernet0/1
+ description LINK-TO-HQ-ACC1
+ switchport trunk allowed vlan 10,20,30,40,50,99
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface FastEthernet0/2
+ description LINK-TO-HQ-ACC2
+ switchport trunk allowed vlan 10,20,30,40,50,99
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface FastEthernet0/3
+ description LINK-TO-HQ-ACC3
+ switchport trunk allowed vlan 10,20,30,40,50,99
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface FastEthernet0/4
+!
+interface FastEthernet0/5
+!
+interface FastEthernet0/6
+!
+interface FastEthernet0/7
+!
+interface FastEthernet0/8
+!
+interface FastEthernet0/9
+!
+interface FastEthernet0/10
+!
+interface FastEthernet0/11
+!
+interface FastEthernet0/12
+!
+interface FastEthernet0/13
+!
+interface FastEthernet0/14
+!
+interface FastEthernet0/15
+!
+interface FastEthernet0/16
+!
+interface FastEthernet0/17
+!
+interface FastEthernet0/18
+!
+interface FastEthernet0/19
+!
+interface FastEthernet0/20
+!
+interface FastEthernet0/21
+!
+interface FastEthernet0/22
+!
+interface FastEthernet0/23
+!
+interface FastEthernet0/24
+!
+interface GigabitEthernet0/1
+ no switchport
+ ip address 10.10.1.45 255.255.255.252
+ duplex auto
+ speed auto
+!
+interface GigabitEthernet0/2
+ description LINK-TO-HQ-CORE1
+ switchport trunk allowed vlan 10,20,30,40,50,99
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan10
+ mac-address 0060.7067.e401
+ ip address 10.10.1.3 255.255.255.240
+ ip helper-address 10.10.1.20
+ standby 10 ip 10.10.1.1
+ standby 10 priority 90
+!
+interface Vlan20
+ mac-address 0060.7067.e402
+ ip address 10.10.0.3 255.255.255.192
+ ip helper-address 10.10.1.20
+ standby 20 ip 10.10.0.1
+ standby 20 priority 90
+!
+interface Vlan30
+ mac-address 0060.7067.e403
+ ip address 10.10.0.67 255.255.255.192
+ ip helper-address 10.10.1.20
+ standby 30 ip 10.10.0.65
+ standby 30 priority 90
+!
+interface Vlan40
+ mac-address 0060.7067.e404
+ ip address 10.10.0.163 255.255.255.224
+ ip helper-address 10.10.1.20
+ standby 40 ip 10.10.0.161
+ standby 40 priority 90
+!
+interface Vlan50
+ mac-address 0060.7067.e405
+ ip address 10.10.1.19 255.255.255.240
+ standby 50 ip 10.10.1.17
+ standby 50 priority 90
+!
+interface Vlan99
+ mac-address 0060.7067.e406
+ ip address 10.10.0.131 255.255.255.224
+ ip helper-address 10.10.1.20
+ standby 99 ip 10.10.0.129
+ standby 99 priority 90
+!
+router ospf 1
+ router-id 2.2.2.2
+ log-adjacency-changes
+ redistribute static subnets 
+ redistribute connected subnets 
+ passive-interface default
+ no passive-interface GigabitEthernet0/1
+ no passive-interface Vlan10
+ network 10.10.1.0 0.0.0.15 area 0
+ network 10.10.0.0 0.0.0.63 area 0
+ network 10.10.0.64 0.0.0.63 area 0
+ network 10.10.0.160 0.0.0.31 area 0
+ network 10.10.1.16 0.0.0.15 area 0
+ network 10.10.0.128 0.0.0.31 area 0
+ network 10.10.1.44 0.0.0.3 area 0
+!
+ip classless
+ip route 10.10.0.160 255.255.255.224 Null0 
+!
+ip flow-export version 9
+!
+!
+ip access-list extended GUEST-IN
+ remark Allow DHCP discover from guest clients
+ permit udp any eq bootpc any eq bootps
+ remark Allow DHCP renew and DNS to the HQ server only
+ permit udp 10.10.0.128 0.0.0.31 host 10.10.1.20 eq bootps
+ permit udp 10.10.0.128 0.0.0.31 host 10.10.1.20 eq domain
+ permit tcp 10.10.0.128 0.0.0.31 host 10.10.1.20 eq domain
+ remark Block guest access to every internal subnet
+ deny ip 10.10.0.128 0.0.0.31 10.10.0.0 0.0.255.255
+ remark Allow everything else
+ permit ip any any
+ip access-list extended SALES-IN
+ remark Block Sales from Engineering
+ deny ip 10.10.0.0 0.0.0.63 10.10.0.64 0.0.0.63
+ remark Block Sales from Management
+ deny ip 10.10.0.0 0.0.0.63 10.10.1.0 0.0.0.15
+ remark Allow everything else
+ permit ip any any
+ip access-list extended ENG-IN
+ remark Block Engineering from Sales
+ deny ip 10.10.0.64 0.0.0.63 10.10.0.0 0.0.0.63
+ remark Block Engineering from Management
+ deny ip 10.10.0.64 0.0.0.63 10.10.1.0 0.0.0.15
+ remark Allow everything else
+ permit ip any any
+!
+banner motd #Authorised Access Only#
+!
+!
+!
+!
+!
+line con 0
+ password cisco
+ login
+!
+line aux 0
+!
+line vty 0 4
+ login local
+ transport input ssh
+line vty 5 15
+ login local
+ transport input ssh
+!
+!
+!
+!
+end
+
